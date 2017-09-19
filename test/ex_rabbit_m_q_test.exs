@@ -11,11 +11,11 @@ defmodule ExRabbitMQTest do
     ExRabbitMQ.ConnectionSupervisor.start_link()
 
     # configuration for a default local RabbitMQ installation
-    connection_config = %ConnectionConfig{username: "guest", password: "guest", host: "127.0.0.1", reconnect_after: 500, qos_opts: [prefetch_count: 1]}
+    connection_config = %ConnectionConfig{username: "guest", password: "guest", host: "127.0.0.1", reconnect_after: 500}
     test_queue = "xrmq_test"
 
     # configuration for a test queue where we will publish to/consumer from
-    queue_config = %QueueConfig{queue: test_queue, queue_opts: [durable: false, auto_delete: true], consume_opts: [no_ack: true], bind_opts: [exchange: "amq.direct", extra_opts: []]}
+    queue_config = %QueueConfig{queue: test_queue, queue_opts: [durable: false, auto_delete: true], consume_opts: [no_ack: true], bind_opts: [exchange: "amq.direct", extra_opts: []], qos_opts: [prefetch_count: 1]}
 
     # the test message to be published and then consumed
     test_message = "ExRabbitMQ test"

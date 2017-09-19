@@ -36,13 +36,7 @@ defmodule ExRabbitMQ.Producer do
 
     # optional override
     def xrmq_channel_setup(channel, state) do
-      # the default channel setup uses the optinal qos_opts from
-      # the connection's configuration so we can use it
-      # automatically by calling super,
-      # unless we want to override everything
-      {:ok, new_state} = super(channel, state)
-
-      # any other channel setup goes here...
+      # any channel setup goes here...
 
       {:ok, new_state}
     end

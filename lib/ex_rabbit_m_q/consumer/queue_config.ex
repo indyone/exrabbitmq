@@ -31,9 +31,12 @@ defmodule ExRabbitMQ.Consumer.QueueConfig do
       extra_opts: [
         "routing_key": "my_routing_key"
       ]
-    ]
+    ],
+
+    # the options to use for specifying QoS properties on a channel (optional, default: nil)
+    qos_opts: [prefetch_count: 1]
   ```
   """
 
-  defstruct [:queue, :queue_opts, :consume_opts, :bind_opts]
+  defstruct [:queue, :queue_opts, :consume_opts, :bind_opts, :qos_opts]
 end

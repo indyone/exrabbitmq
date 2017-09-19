@@ -41,7 +41,7 @@ defmodule ExRabbitMQ.Consumer do
 
     # optional override
     def xrmq_channel_setup(channel, state) do
-      # the default channel setup uses the optinal qos_opts from
+      # the default channel setup uses the optional qos_opts from
       # the connection's configuration so we can use it
       # automatically by calling super,
       # unless we want to override everything
@@ -406,7 +406,20 @@ defmodule ExRabbitMQ.Consumer do
           queue_opts: config.queue_opts || [],
           consume_opts: config.consume_opts || [],
           bind_opts: config.bind_opts || nil,
+          qos_opts: config.qos_opts || nil,
         }
+      end
+
+      def xrmq_channel_setup(channel, state) do
+        with \
+          %{qos_opts: opts} when opts != nil <- xrmq_get_queue_config(),
+          :ok <- AMQP.Basic.qos(channel, opts)
+        do
+          {:ok, state}
+        else
+          %{qos_opts: nil} -> {:ok, state}
+          {:error, reason} -> {:error, reason, state}
+        end
       end
 
       def xrmq_queue_setup(channel, queue, state) do
@@ -471,6 +484,7 @@ defmodule ExRabbitMQ.Consumer do
           queue_opts: config[:queue_opts],
           consume_opts: config[:consume_opts],
           bind_opts: config[:bind_opts],
+          qos_opts: config[:qos_opts],
         }
       end
 
