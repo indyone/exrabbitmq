@@ -9,7 +9,7 @@ defmodule ExRabbitMQ.Consumer do
 
   For a connection configuration example see `ExRabbitMQ.ConnectionConfig`.
 
-  For a queue configuration example see `ExRabbitMQ.Consumer.QueueConfig`.
+  For a queue configuration example see `ExRabbitMQ.Consumer.ConsumerConfig`.
 
   #### Example usage for a consumer implementing a `GenServer`
 
@@ -26,7 +26,7 @@ defmodule ExRabbitMQ.Consumer do
 
     def init(state) do
       new_state =
-        xrmq_init(:my_connection_config, :my_queue_config, state)
+        xrmq_init(:my_connection_config, :my_consumer_config, state)
         |> xrmq_extract_state()
 
       {:ok, new_state}
@@ -94,7 +94,7 @@ defmodule ExRabbitMQ.Consumer do
   If `start_consuming` is `true` then `c:xrmq_consume/1` is called automatically.
 
   This variant accepts an atom as the argument for the `connection_key` parameter and
-  a `ExRabbitMQ.Consumer.QueueConfig` struct as the argument for the `queue_config` parameter.
+  a `ExRabbitMQ.Consumer.ConsumerConfig` struct as the argument for the `consumer_config` parameter.
 
   The `connection_key` atom argument is used to read the connection's configuration.
 
@@ -102,7 +102,7 @@ defmodule ExRabbitMQ.Consumer do
 
   For the configuration format see the top section of `ExRabbitMQ.Consumer`.
   """
-  @callback xrmq_init(connection_key :: atom, queue_config :: struct, start_consuming :: true|false, state :: term) ::
+  @callback xrmq_init(connection_key :: atom, consumer_config :: struct, start_consuming :: true|false, state :: term) ::
     {:ok, new_state :: term} |
     {:error, reason :: term, new_state :: term}
 
@@ -137,14 +137,14 @@ defmodule ExRabbitMQ.Consumer do
 
   If `start_consuming` is `true` then `c:xrmq_consume/1` is called automatically.
 
-  This variant accepts a `ExRabbitMQ.Connection` and a `ExRabbitMQ.Consumer.QueueConfig` structs
-  as the arguments for the `connection_config` and `queue_config` parameters.
+  This variant accepts a `ExRabbitMQ.Connection` and a `ExRabbitMQ.Consumer.ConsumerConfig` structs
+  as the arguments for the `connection_config` and `consumer_config` parameters.
 
   The wrapper process's state is passed in to allow the callback to mutate it if overriden.
 
   For the configuration format see the top section of `ExRabbitMQ.Consumer`.
   """
-  @callback xrmq_init(connection_config :: struct, queue_config :: struct, start_consuming :: true|false, state :: term) ::
+  @callback xrmq_init(connection_config :: struct, consumer_config :: struct, start_consuming :: true|false, state :: term) ::
     {:ok, new_state :: term} |
     {:error, reason :: term, new_state :: term}
 
@@ -172,7 +172,7 @@ defmodule ExRabbitMQ.Consumer do
 
   For the configuration format see the top section of `ExRabbitMQ.Consumer`.
   """
-  @callback xrmq_get_queue_config() :: term
+  @callback xrmq_get_consumer_config() :: term
 
   @doc """
   This hook is called when a connection has been established and a new channel has been opened.
@@ -321,32 +321,32 @@ defmodule ExRabbitMQ.Consumer do
       alias ExRabbitMQ.Constants
       alias ExRabbitMQ.Connection
       alias ExRabbitMQ.ConnectionConfig
-      alias ExRabbitMQ.Consumer.QueueConfig
+      alias ExRabbitMQ.Consumer.ConsumerConfig
 
       unquote(inner_ast)
 
-      def xrmq_init(connection_config_spec, queue_config_spec, start_consuming \\ true, state)
+      def xrmq_init(connection_config_spec, consumer_config_spec, start_consuming \\ true, state)
 
       def xrmq_init(connection_key, queue_key, start_consuming, state)
       when is_atom(connection_key) and is_atom(queue_key) do
-        xrmq_init(xrmq_get_connection_config(connection_key), xrmq_get_queue_config(queue_key),
+        xrmq_init(xrmq_get_connection_config(connection_key), xrmq_get_consumer_config(queue_key),
           start_consuming, state)
       end
 
-      def xrmq_init(connection_key, %QueueConfig{} = queue_config, start_consuming, state)
+      def xrmq_init(connection_key, %ConsumerConfig{} = consumer_config, start_consuming, state)
       when is_atom(connection_key) do
-        xrmq_init(xrmq_get_connection_config(connection_key), queue_config, start_consuming, state)
+        xrmq_init(xrmq_get_connection_config(connection_key), consumer_config, start_consuming, state)
       end
 
       def xrmq_init(%ConnectionConfig{} = connection_config, queue_key, start_consuming, state)
       when is_atom(queue_key) do
-        xrmq_init(connection_config, xrmq_get_queue_config(queue_key), start_consuming, state)
+        xrmq_init(connection_config, xrmq_get_consumer_config(queue_key), start_consuming, state)
       end
 
-      def xrmq_init(%ConnectionConfig{} = connection_config, %QueueConfig{} = queue_config,
+      def xrmq_init(%ConnectionConfig{} = connection_config, %ConsumerConfig{} = consumer_config,
         start_consuming, state) do
         connection_config = xrmq_set_connection_config_defaults(connection_config)
-        queue_config = xrmq_set_queue_config_defaults(queue_config)
+        consumer_config = xrmq_set_consumer_config_defaults(consumer_config)
 
         connection_pids_group_name = Constants.connection_pids_group_name()
 
@@ -371,7 +371,7 @@ defmodule ExRabbitMQ.Consumer do
 
         xrmq_set_connection_pid(connection_pid)
         xrmq_set_connection_config(connection_config)
-        xrmq_set_queue_config(queue_config)
+        xrmq_set_consumer_config(consumer_config)
 
         if start_consuming do
           xrmq_open_channel_consume(state)
@@ -381,7 +381,7 @@ defmodule ExRabbitMQ.Consumer do
       end
 
       def xrmq_consume(state) do
-        {{channel, _}, config} = {xrmq_get_channel_info(), xrmq_get_queue_config()}
+        {{channel, _}, config} = {xrmq_get_channel_info(), xrmq_get_consumer_config()}
 
         if channel === nil or config === nil do
           nil
@@ -400,8 +400,8 @@ defmodule ExRabbitMQ.Consumer do
         end
       end
 
-      defp xrmq_set_queue_config_defaults(%QueueConfig{} = config) do
-        %QueueConfig{
+      defp xrmq_set_consumer_config_defaults(%ConsumerConfig{} = config) do
+        %ConsumerConfig{
           queue: config.queue || "",
           queue_opts: config.queue_opts || [],
           consume_opts: config.consume_opts || [],
@@ -412,7 +412,7 @@ defmodule ExRabbitMQ.Consumer do
 
       def xrmq_channel_setup(channel, state) do
         with \
-          %{qos_opts: opts} when opts != nil <- xrmq_get_queue_config(),
+          %{qos_opts: opts} when opts != nil <- xrmq_get_consumer_config(),
           :ok <- AMQP.Basic.qos(channel, opts)
         do
           {:ok, state}
@@ -424,7 +424,7 @@ defmodule ExRabbitMQ.Consumer do
 
       def xrmq_queue_setup(channel, queue, state) do
         with \
-          %{bind_opts: opts} when opts != nil <- xrmq_get_queue_config(),
+          %{bind_opts: opts} when opts != nil <- xrmq_get_consumer_config(),
           :ok <- AMQP.Queue.bind(channel, queue, opts[:exchange], opts[:extra_opts] || [])
         do
           {:ok, state}
@@ -472,14 +472,14 @@ defmodule ExRabbitMQ.Consumer do
         end
       end
 
-      def xrmq_get_queue_config() do
-        Process.get(Constants.queue_config_key())
+      def xrmq_get_consumer_config() do
+        Process.get(Constants.consumer_config_key())
       end
 
-      defp xrmq_get_queue_config(key) do
+      defp xrmq_get_consumer_config(key) do
         config = xrmq_get_env_config(key)
 
-        %QueueConfig{
+        %ConsumerConfig{
           queue: config[:queue],
           queue_opts: config[:queue_opts],
           consume_opts: config[:consume_opts],
@@ -488,11 +488,11 @@ defmodule ExRabbitMQ.Consumer do
         }
       end
 
-      defp xrmq_set_queue_config(config) do
+      defp xrmq_set_consumer_config(config) do
         if config === nil do
-          Process.delete(Constants.queue_config_key())
+          Process.delete(Constants.consumer_config_key())
         else
-          Process.put(Constants.queue_config_key(), config)
+          Process.put(Constants.consumer_config_key(), config)
         end
       end
 

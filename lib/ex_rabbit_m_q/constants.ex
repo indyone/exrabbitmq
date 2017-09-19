@@ -21,7 +21,7 @@ defmodule ExRabbitMQ.Constants do
   @doc """
   The key in the process dictionary holding the queue configuration used by a consumer.
   """
-  def queue_config_key(), do: :xrmq_queue_config
+  def consumer_config_key(), do: :xrmq_consumer_config
 
   @doc """
   The key in the process dictionary holding the channel struct used by a consumer or a producer.

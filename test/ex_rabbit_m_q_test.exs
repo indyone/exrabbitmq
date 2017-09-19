@@ -3,7 +3,7 @@ defmodule ExRabbitMQTest do
 
   alias ExRabbitMQ.Connection
   alias ExRabbitMQ.ConnectionConfig
-  alias ExRabbitMQ.Consumer.QueueConfig
+  alias ExRabbitMQ.Consumer.ConsumerConfig
 
   test "publishing a message and then consuming it" do
     # first we start the connection supervisor
@@ -15,13 +15,13 @@ defmodule ExRabbitMQTest do
     test_queue = "xrmq_test"
 
     # configuration for a test queue where we will publish to/consumer from
-    queue_config = %QueueConfig{queue: test_queue, queue_opts: [durable: false, auto_delete: true], consume_opts: [no_ack: true], bind_opts: [exchange: "amq.direct", extra_opts: []], qos_opts: [prefetch_count: 1]}
+    consumer_config = %ConsumerConfig{queue: test_queue, queue_opts: [durable: false, auto_delete: true], consume_opts: [no_ack: true], bind_opts: [exchange: "amq.direct", extra_opts: []], qos_opts: [prefetch_count: 1]}
 
     # the test message to be published and then consumed
     test_message = "ExRabbitMQ test"
 
     # we start the consumer so that the queue will be declared
-    {:ok, consumer} = ExRabbitMQConsumerTest.start_link(self(), connection_config, queue_config)
+    {:ok, consumer} = ExRabbitMQConsumerTest.start_link(self(), connection_config, consumer_config)
 
     # we monitor the consumer so that we can wait for it to exit
     consumer_monitor = Process.monitor(consumer)
@@ -151,8 +151,8 @@ defmodule ExRabbitMQConsumerTest do
   use GenServer
   use ExRabbitMQ.Consumer, GenServer
 
-  def start_link(tester_pid, connection_config, queue_config) do
-    GenServer.start_link(__MODULE__, %{tester_pid: tester_pid, connection_config: connection_config, queue_config: queue_config})
+  def start_link(tester_pid, connection_config, consumer_config) do
+    GenServer.start_link(__MODULE__, %{tester_pid: tester_pid, connection_config: connection_config, consumer_config: consumer_config})
   end
 
   def init(state) do
@@ -165,9 +165,9 @@ defmodule ExRabbitMQConsumerTest do
     GenServer.cast(consumer_pid, :stop)
   end
 
-  def handle_cast(:init, %{tester_pid: tester_pid, connection_config: connection_config, queue_config: queue_config} = state) do
+  def handle_cast(:init, %{tester_pid: tester_pid, connection_config: connection_config, consumer_config: consumer_config} = state) do
     new_state =
-      xrmq_init(connection_config, queue_config, state)
+      xrmq_init(connection_config, consumer_config, state)
       |> xrmq_extract_state()
 
     send(tester_pid, {:consumer_connection_open, xrmq_get_connection_pid()})

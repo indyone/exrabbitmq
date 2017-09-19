@@ -1,4 +1,4 @@
-defmodule ExRabbitMQ.Consumer.QueueConfig do
+defmodule ExRabbitMQ.Consumer.ConsumerConfig do
   @moduledoc """
   A stucture holding the necessary information about a queue that is to be consumed.
 
@@ -10,7 +10,7 @@ defmodule ExRabbitMQ.Consumer.QueueConfig do
 
   ```elixir
   # :queue is this queue's configuration name
-  config :exrabbitmq, :my_queue_config,
+  config :exrabbitmq, :my_consumer_config,
 
     # name of the queue from which we wish to consume (optional, default: "")
     queue: "my_queue",
