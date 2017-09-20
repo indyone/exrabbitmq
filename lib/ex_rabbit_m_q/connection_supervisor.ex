@@ -5,7 +5,7 @@ defmodule ExRabbitMQ.ConnectionSupervisor do
   """
   @module __MODULE__
 
-  use Supervisor
+  use Supervisor, start: {@module, :start_link, []}
 
   def start_link() do
     Supervisor.start_link(@module, :ok, name: @module)
